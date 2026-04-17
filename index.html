@@ -1,0 +1,856 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>智能提示词管理器 | 本地存储 · 永久保存</title>
+    <!-- Font Awesome 6 (免费图标库) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: system-ui, -apple-system, 'Segoe UI', 'Roboto', 'Noto Sans', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f6f9fc 0%, #eef2f5 100%);
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+        }
+
+        /* 主容器 */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* 头部卡片 */
+        .hero {
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(4px);
+            border-radius: 2rem;
+            padding: 1.8rem 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.03), 0 2px 4px rgba(0,0,0,0.05);
+            border: 1px solid rgba(255,255,255,0.8);
+        }
+
+        h1 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1e2a3e, #0f2b3d);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        h1 i {
+            background: none;
+            color: #2c7da0;
+            font-size: 2rem;
+        }
+
+        .sub {
+            color: #4a627a;
+            margin-top: 8px;
+            font-size: 0.9rem;
+            border-left: 3px solid #2c7da0;
+            padding-left: 12px;
+        }
+
+        /* 工具栏区域 */
+        .toolbar {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 1.8rem;
+        }
+
+        .actions-left {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .actions-right {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            border: none;
+            padding: 0.6rem 1.2rem;
+            border-radius: 2rem;
+            font-weight: 500;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: white;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: #1e4668;
+            color: white;
+            box-shadow: 0 4px 8px rgba(30,70,104,0.2);
+        }
+
+        .btn-primary:hover {
+            background: #0f3552;
+            transform: translateY(-2px);
+        }
+
+        .btn-outline {
+            border: 1px solid #cbdbe0;
+            background: white;
+        }
+
+        .btn-outline:hover {
+            background: #f0f4f9;
+            border-color: #8ba0bc;
+        }
+
+        .btn-danger {
+            color: #b91c1c;
+            border-color: #f3cfcf;
+        }
+
+        .btn-danger:hover {
+            background: #ffe5e5;
+            border-color: #e07c7c;
+        }
+
+        /* 搜索 + 标签栏 */
+        .search-section {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1rem 1.5rem;
+            margin-bottom: 1.8rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            border: 1px solid #e9edf2;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #f8fafd;
+            border-radius: 2rem;
+            padding: 0.5rem 1rem;
+            border: 1px solid #e2e8f0;
+            margin-bottom: 1rem;
+        }
+
+        .search-box i {
+            color: #7f8c9a;
+            margin-right: 10px;
+        }
+
+        .search-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
+            font-size: 0.95rem;
+            outline: none;
+            padding: 6px 0;
+        }
+
+        .tag-filter {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tag-filter span {
+            font-size: 0.75rem;
+            color: #5d6f83;
+            font-weight: 500;
+        }
+
+        .tag-btn {
+            background: #eff3f8;
+            padding: 0.3rem 1rem;
+            border-radius: 2rem;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+            color: #2c3e4e;
+        }
+
+        .tag-btn.active {
+            background: #1e4668;
+            color: white;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .tag-btn.clear-tag {
+            background: #e9ecef;
+            color: #5a6e85;
+        }
+
+        /* 卡片网格 */
+        .prompts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+            gap: 1.5rem;
+            margin-top: 0.5rem;
+        }
+
+        .prompt-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.2rem 1.2rem 1rem 1.2rem;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.03);
+            transition: all 0.25s ease;
+            border: 1px solid #eef2f8;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .prompt-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 30px -12px rgba(0, 0, 0, 0.1);
+            border-color: #cfdfef;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .prompt-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1e2f3f;
+            word-break: break-word;
+            max-width: 70%;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .card-actions button {
+            background: none;
+            border: none;
+            font-size: 1rem;
+            cursor: pointer;
+            color: #8d9bb0;
+            transition: 0.1s;
+        }
+
+        .card-actions button:hover {
+            color: #2c7da0;
+        }
+
+        .prompt-content {
+            background: #fafcff;
+            padding: 12px;
+            border-radius: 1rem;
+            font-size: 0.85rem;
+            line-height: 1.45;
+            color: #2c3f55;
+            border: 1px solid #eef2fa;
+            margin: 12px 0;
+            max-height: 150px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: 'SF Mono', 'Menlo', monospace;
+        }
+
+        .tags-area {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 8px 0 6px;
+        }
+
+        .tag {
+            background: #eef3fc;
+            padding: 0.2rem 0.7rem;
+            border-radius: 2rem;
+            font-size: 0.7rem;
+            color: #2c7da0;
+            font-weight: 500;
+        }
+
+        .timestamp {
+            font-size: 0.65rem;
+            color: #9aaebf;
+            margin-top: 8px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        .copy-btn {
+            background: #f0f4fa;
+            border: none;
+            border-radius: 2rem;
+            padding: 5px 12px;
+            font-size: 0.7rem;
+            margin-top: 6px;
+            width: fit-content;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.1s;
+        }
+
+        .copy-btn:hover {
+            background: #e2eaf3;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            background: white;
+            border-radius: 2rem;
+            color: #8b9bb0;
+        }
+
+        /* 模态框 */
+        dialog {
+            border: none;
+            border-radius: 2rem;
+            padding: 1.8rem;
+            width: 90%;
+            max-width: 620px;
+            backdrop-filter: blur(6px);
+            background: rgba(255,255,255,0.98);
+            box-shadow: 0 25px 40px rgba(0,0,0,0.2);
+        }
+        dialog::backdrop {
+            background: rgba(0,0,0,0.4);
+        }
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1.2rem;
+        }
+        .form-group {
+            margin-bottom: 1.2rem;
+        }
+        .form-group label {
+            font-weight: 600;
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+        }
+        .form-group input, .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border-radius: 1rem;
+            border: 1px solid #cfdfef;
+            background: white;
+            font-size: 0.9rem;
+        }
+        .form-group textarea {
+            min-height: 150px;
+            resize: vertical;
+            font-family: monospace;
+        }
+        .modal-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 1.2rem;
+        }
+
+        /* 部署帮助 */
+        .deploy-info {
+            margin-top: 3rem;
+            background: #eaf3f9;
+            border-radius: 1.2rem;
+            padding: 1rem 1.5rem;
+            font-size: 0.8rem;
+            color: #1e4a6e;
+            border-left: 5px solid #2c7da0;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 2rem;
+            font-size: 0.7rem;
+            color: #7c8b9c;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 1rem; }
+            .prompts-grid { grid-template-columns: 1fr; }
+            .toolbar { flex-direction: column; align-items: stretch; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="hero">
+        <h1><i class="fas fa-brain"></i> 提示词管理器 · 本地永存</h1>
+        <div class="sub">📋 智能存储 · 标签分类 · 一键复制 · 数据永远在你浏览器里</div>
+    </div>
+
+    <div class="toolbar">
+        <div class="actions-left">
+            <button class="btn btn-primary" id="addPromptBtn"><i class="fas fa-plus-circle"></i> 新建提示词</button>
+            <button class="btn btn-outline" id="exportDataBtn"><i class="fas fa-download"></i> 导出备份</button>
+            <button class="btn btn-outline" id="importDataBtn"><i class="fas fa-upload"></i> 导入恢复</button>
+        </div>
+        <div class="actions-right">
+            <button class="btn btn-outline" id="resetExampleBtn"><i class="fas fa-lightbulb"></i> 加载示例</button>
+            <button class="btn btn-outline btn-danger" id="clearAllBtn"><i class="fas fa-trash-alt"></i> 清空所有</button>
+        </div>
+    </div>
+
+    <div class="search-section">
+        <div class="search-box">
+            <i class="fas fa-search"></i>
+            <input type="text" id="searchInput" placeholder="搜索提示词名称或内容..." autocomplete="off">
+        </div>
+        <div class="tag-filter">
+            <span><i class="fas fa-tags"></i> 标签筛选：</span>
+            <div id="tagFilterContainer" style="display: flex; flex-wrap: wrap; gap: 6px;">
+                <!-- 动态标签按钮 -->
+                <button class="tag-btn clear-tag active" data-tag="">🏷️ 全部</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="promptsList" class="prompts-grid">
+        <!-- 动态渲染卡片 -->
+        <div class="empty-state">✨ 暂无提示词，点击“新建提示词”开始管理你的 AI 魔法指令~</div>
+    </div>
+
+    <!-- 部署提示区 -->
+    <div class="deploy-info">
+        <i class="fas fa-globe"></i> <strong>🚀 如何将本工具部署到网上并获得链接？</strong><br>
+        1️⃣ <strong>GitHub Pages</strong>：将此文件保存为 <code>index.html</code>，新建 GitHub 仓库上传，进入 Settings → Pages → 选择 main 分支，即可获得 <code>https://你的用户名.github.io/仓库名/</code> 链接。<br>
+        2️⃣ <strong>Netlify Drop</strong>：访问 <strong>app.netlify.com/drop</strong>，直接把本文件拖进去，一秒生成公开链接。<br>
+        3️⃣ <strong>Vercel / Cloudflare Pages</strong> 同样简单。数据完全存储在浏览器本地，换设备前记得“导出备份”即可迁移。<br>
+        💡 或者直接双击 HTML 文件在本地使用，所有数据自动保存。
+    </div>
+    <footer>⚡ 所有提示词均保存在你浏览器的 localStorage 中，关闭页面也不会丢失。支持标签组合筛选、全文搜索。</footer>
+</div>
+
+<!-- 模态框 dialog -->
+<dialog id="promptModal">
+    <div class="modal-title" id="modalTitle">添加提示词</div>
+    <div class="form-group">
+        <label>📌 名称 *</label>
+        <input type="text" id="promptName" placeholder="例如：代码审查助手 / 周报生成器">
+    </div>
+    <div class="form-group">
+        <label>🏷️ 标签 (用逗号分隔) </label>
+        <input type="text" id="promptTags" placeholder="例如：编程, 办公, 创意写作">
+    </div>
+    <div class="form-group">
+        <label>📝 提示词内容 *</label>
+        <textarea id="promptContent" placeholder="输入完整的提示词内容，支持变量 {{example}} 等任意文本..."></textarea>
+    </div>
+    <div class="modal-buttons">
+        <button class="btn btn-outline" id="closeModalBtn">取消</button>
+        <button class="btn btn-primary" id="savePromptBtn">保存</button>
+    </div>
+</dialog>
+
+<script>
+    // ---------- 数据模型 ----------
+    let prompts = [];         // 每个对象: { id, name, tagsStr, content, updatedAt }
+    let currentEditId = null; // 编辑模式下的id
+    let currentTagFilter = "";     // 当前筛选的标签 (完全匹配任意一个)
+    let searchKeyword = "";
+
+    // localStorage KEY
+    const STORAGE_KEY = "prompt_manager_app";
+
+    // 辅助函数: 保存数据到localStorage
+    function persistData() {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(prompts));
+    }
+
+    // 加载默认示例数据 (初次访问或重置示例)
+    function loadExampleData() {
+        return [
+            {
+                id: Date.now() + 101,
+                name: "🧠 链式思考推理助手",
+                tagsStr: "推理, 逻辑, 通用",
+                content: "请逐步推理以下问题，每一步都要给出思考过程，最后给出结论。\n问题：{{question}}",
+                updatedAt: new Date().toISOString()
+            },
+            {
+                id: Date.now() + 102,
+                name: "💻 Python 代码优化师",
+                tagsStr: "编程, 代码审查",
+                content: "你是一位资深Python工程师，请分析以下代码的性能瓶颈，并提供优化版本，解释改动原因。\n代码：\n```python\n{{code}}\n```",
+                updatedAt: new Date().toISOString()
+            },
+            {
+                id: Date.now() + 103,
+                name: "✍️ 邮件润色专家",
+                tagsStr: "办公, 写作",
+                content: "请将以下邮件草稿改写成更专业、礼貌且清晰的版本，保留核心信息。\n原文：{{draft}}",
+                updatedAt: new Date().toISOString()
+            },
+            {
+                id: Date.now() + 104,
+                name: "🎨 创意故事生成器",
+                tagsStr: "创意, 写作, 娱乐",
+                content: "根据以下关键词，创造一个微小说（200字以内），风格温暖有趣。\n关键词：{{keywords}}",
+                updatedAt: new Date().toISOString()
+            }
+        ];
+    }
+
+    // 初始化/加载本地数据
+    function loadData() {
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            try {
+                prompts = JSON.parse(stored);
+                if (!Array.isArray(prompts)) prompts = [];
+            } catch(e) { prompts = []; }
+        }
+        // 如果没有数据或空数组，加载示例数据让体验丰富
+        if (!prompts || prompts.length === 0) {
+            prompts = loadExampleData();
+            persistData();
+        }
+    }
+
+    // 保存/更新/删除后统一渲染
+    function refreshUI() {
+        renderTagFilter();      // 更新所有标签按钮
+        renderPromptsList();    // 渲染卡片列表
+    }
+
+    // 获取所有出现过的标签 (去重)
+    function getAllUniqueTags() {
+        const tagSet = new Set();
+        prompts.forEach(p => {
+            if (p.tagsStr && p.tagsStr.trim() !== "") {
+                const tags = p.tagsStr.split(',').map(t => t.trim()).filter(t => t !== "");
+                tags.forEach(t => tagSet.add(t));
+            }
+        });
+        return Array.from(tagSet);
+    }
+
+    // 渲染标签筛选栏 (按钮)
+    function renderTagFilter() {
+        const allTags = getAllUniqueTags();
+        const container = document.getElementById("tagFilterContainer");
+        if (!container) return;
+        // 保留“全部”按钮
+        let html = `<button class="tag-btn clear-tag ${currentTagFilter === "" ? 'active' : ''}" data-tag="">🏷️ 全部</button>`;
+        allTags.forEach(tag => {
+            const activeClass = (currentTagFilter === tag) ? 'active' : '';
+            html += `<button class="tag-btn ${activeClass}" data-tag="${escapeHtml(tag)}">${escapeHtml(tag)}</button>`;
+        });
+        container.innerHTML = html;
+        // 绑定事件
+        document.querySelectorAll("#tagFilterContainer .tag-btn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const tagValue = btn.getAttribute("data-tag") || "";
+                if (currentTagFilter === tagValue) {
+                    // 如果点击相同标签则取消筛选
+                    currentTagFilter = "";
+                } else {
+                    currentTagFilter = tagValue;
+                }
+                refreshUI(); // 重新渲染列表和按钮高亮
+            });
+        });
+    }
+
+    // 过滤提示词 (搜索 + 标签)
+    function getFilteredPrompts() {
+        let filtered = [...prompts];
+        // 关键词搜索 (名称+内容)
+        if (searchKeyword.trim() !== "") {
+            const kw = searchKeyword.trim().toLowerCase();
+            filtered = filtered.filter(p => 
+                p.name.toLowerCase().includes(kw) || 
+                p.content.toLowerCase().includes(kw)
+            );
+        }
+        // 标签筛选: 如果currentTagFilter不为空，则需要提示词的tagsStr包含该标签（完全匹配其中一个）
+        if (currentTagFilter !== "") {
+            filtered = filtered.filter(p => {
+                if (!p.tagsStr) return false;
+                const tagsArr = p.tagsStr.split(',').map(t => t.trim());
+                return tagsArr.includes(currentTagFilter);
+            });
+        }
+        // 按更新时间倒序
+        filtered.sort((a,b) => new Date(b.updatedAt) - new Date(a.updatedAt));
+        return filtered;
+    }
+
+    // 转义HTML
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        }).replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, function(c) {
+            return c;
+        });
+    }
+
+    // 格式化时间显示
+    function formatDate(isoString) {
+        if (!isoString) return "未知时间";
+        const date = new Date(isoString);
+        return `${date.getFullYear()}-${(date.getMonth()+1).toString().padStart(2,'0')}-${date.getDate().toString().padStart(2,'0')} ${date.getHours().toString().padStart(2,'0')}:${date.getMinutes().toString().padStart(2,'0')}`;
+    }
+
+    // 渲染卡片列表
+    function renderPromptsList() {
+        const container = document.getElementById("promptsList");
+        const filtered = getFilteredPrompts();
+        if (!filtered.length) {
+            container.innerHTML = `<div class="empty-state"><i class="fas fa-dove"></i> 没有找到提示词，试试其他筛选条件或新建一条～</div>`;
+            return;
+        }
+        let cardsHtml = "";
+        filtered.forEach(p => {
+            // 标签数组用于显示
+            let tagArray = [];
+            if (p.tagsStr && p.tagsStr.trim() !== "") {
+                tagArray = p.tagsStr.split(',').map(t => t.trim()).filter(t => t !== "");
+            }
+            const tagsHtml = tagArray.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('');
+            const contentPreview = p.content.length > 180 ? p.content.substring(0, 180) + "…" : p.content;
+            cardsHtml += `
+                <div class="prompt-card" data-id="${p.id}">
+                    <div class="card-header">
+                        <div class="prompt-name">${escapeHtml(p.name)}</div>
+                        <div class="card-actions">
+                            <button class="edit-prompt" data-id="${p.id}" title="编辑"><i class="fas fa-edit"></i></button>
+                            <button class="delete-prompt" data-id="${p.id}" title="删除"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <div class="tags-area">${tagsHtml || '<span style="font-size:0.7rem; color:#aaa;">无标签</span>'}</div>
+                    <div class="prompt-content">${escapeHtml(contentPreview)}</div>
+                    <button class="copy-btn" data-content="${escapeHtml(p.content).replace(/"/g, '&quot;')}"><i class="fas fa-copy"></i> 复制完整提示词</button>
+                    <div class="timestamp"><i class="far fa-clock"></i> 更新于 ${formatDate(p.updatedAt)}</div>
+                </div>
+            `;
+        });
+        container.innerHTML = cardsHtml;
+
+        // 绑定卡片内按钮事件
+        document.querySelectorAll(".edit-prompt").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const id = parseInt(btn.getAttribute("data-id"));
+                openEditModal(id);
+            });
+        });
+        document.querySelectorAll(".delete-prompt").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const id = parseInt(btn.getAttribute("data-id"));
+                if (confirm("确定要删除这个提示词吗？不可撤销。")) {
+                    prompts = prompts.filter(p => p.id !== id);
+                    persistData();
+                    refreshUI();
+                }
+            });
+        });
+        document.querySelectorAll(".copy-btn").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                const rawContent = btn.getAttribute("data-content");
+                try {
+                    await navigator.clipboard.writeText(rawContent);
+                    const originalText = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check"></i> 已复制！';
+                    setTimeout(() => { btn.innerHTML = originalText; }, 1500);
+                } catch(err) {
+                    alert("复制失败，可手动选中复制");
+                }
+            });
+        });
+    }
+
+    // 打开新增模态框
+    function openAddModal() {
+        currentEditId = null;
+        document.getElementById("modalTitle").innerText = "✨ 新建提示词";
+        document.getElementById("promptName").value = "";
+        document.getElementById("promptTags").value = "";
+        document.getElementById("promptContent").value = "";
+        document.getElementById("promptModal").showModal();
+    }
+
+    // 打开编辑模态框
+    function openEditModal(id) {
+        const prompt = prompts.find(p => p.id === id);
+        if (!prompt) return;
+        currentEditId = id;
+        document.getElementById("modalTitle").innerText = "✏️ 编辑提示词";
+        document.getElementById("promptName").value = prompt.name;
+        document.getElementById("promptTags").value = prompt.tagsStr || "";
+        document.getElementById("promptContent").value = prompt.content;
+        document.getElementById("promptModal").showModal();
+    }
+
+    // 保存 (新增或更新)
+    function savePrompt() {
+        const name = document.getElementById("promptName").value.trim();
+        const tagsStr = document.getElementById("promptTags").value.trim();
+        const content = document.getElementById("promptContent").value.trim();
+        if (!name) {
+            alert("请填写提示词名称");
+            return;
+        }
+        if (!content) {
+            alert("提示词内容不能为空");
+            return;
+        }
+        const nowISO = new Date().toISOString();
+        if (currentEditId === null) {
+            // 新增
+            const newId = Date.now();
+            const newPrompt = {
+                id: newId,
+                name: name,
+                tagsStr: tagsStr,
+                content: content,
+                updatedAt: nowISO
+            };
+            prompts.unshift(newPrompt);
+        } else {
+            // 更新
+            const index = prompts.findIndex(p => p.id === currentEditId);
+            if (index !== -1) {
+                prompts[index] = {
+                    ...prompts[index],
+                    name: name,
+                    tagsStr: tagsStr,
+                    content: content,
+                    updatedAt: nowISO
+                };
+            }
+        }
+        persistData();
+        document.getElementById("promptModal").close();
+        refreshUI();
+    }
+
+    // 导出备份
+    function exportBackup() {
+        const dataStr = JSON.stringify(prompts, null, 2);
+        const blob = new Blob([dataStr], {type: "application/json"});
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `prompts_backup_${new Date().toISOString().slice(0,19)}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+
+    // 导入恢复 (覆盖)
+    function importBackup() {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = "application/json";
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                try {
+                    const imported = JSON.parse(ev.target.result);
+                    if (Array.isArray(imported)) {
+                        if (confirm("⚠️ 导入将会覆盖当前所有提示词，是否继续？建议先导出备份。")) {
+                            prompts = imported;
+                            persistData();
+                            refreshUI();
+                            alert("导入成功！");
+                        }
+                    } else {
+                        alert("文件格式错误：需要提示词数组");
+                    }
+                } catch(err) {
+                    alert("解析失败，请确保是有效的JSON文件");
+                }
+            };
+            reader.readAsText(file);
+        };
+        input.click();
+    }
+
+    // 重置示例数据
+    function resetExample() {
+        if (confirm("加载示例数据会替换当前所有提示词，当前数据将被覆盖。建议先导出备份。")) {
+            prompts = loadExampleData();
+            persistData();
+            refreshUI();
+        }
+    }
+
+    // 清空所有数据
+    function clearAll() {
+        if (confirm("⚠️ 彻底清空所有提示词，无法恢复！确认吗？")) {
+            prompts = [];
+            persistData();
+            refreshUI();
+        }
+    }
+
+    // 搜索联动
+    function bindSearch() {
+        const searchInput = document.getElementById("searchInput");
+        searchInput.addEventListener("input", (e) => {
+            searchKeyword = e.target.value;
+            refreshUI();
+        });
+    }
+
+    // 初始化事件
+    function bindGlobalEvents() {
+        document.getElementById("addPromptBtn").addEventListener("click", openAddModal);
+        document.getElementById("closeModalBtn").addEventListener("click", () => {
+            document.getElementById("promptModal").close();
+        });
+        document.getElementById("savePromptBtn").addEventListener("click", savePrompt);
+        document.getElementById("exportDataBtn").addEventListener("click", exportBackup);
+        document.getElementById("importDataBtn").addEventListener("click", importBackup);
+        document.getElementById("resetExampleBtn").addEventListener("click", resetExample);
+        document.getElementById("clearAllBtn").addEventListener("click", clearAll);
+        bindSearch();
+    }
+
+    // 初次启动
+    function init() {
+        loadData();
+        bindGlobalEvents();
+        refreshUI();
+    }
+
+    init();
+</script>
+</body>
+</html>
